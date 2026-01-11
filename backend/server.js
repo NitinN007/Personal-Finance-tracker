@@ -26,21 +26,31 @@ connectDB();
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ FIXED CORS (support localhost + deployed frontend)
+// ✅ CORS FIX (Render + localhost)
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.CLIENT_URL, // deployed frontend url
-];
+  "https://personal-finance-tracker-frontend-ymm.onrender.com", // ✅ hardcode deployed frontend
+  process.env.CLIENT_URL, // optional env
+]
+  .filter(Boolean) // ✅ removes undefined/null
+  .map((url) => url.trim().replace(/\/$/, "")); // ✅ remove trailing /
+
+console.log("✅ Allowed origins:", allowedOrigins);
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (Postman)
+    origin: (origin, callback) => {
+      // allow requests with no origin (Postman/curl)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      const cleanOrigin = origin.trim().replace(/\/$/, "");
 
-      return callback(new Error("CORS blocked: " + origin));
+      if (allowedOrigins.includes(cleanOrigin)) {
+        return callback(null, true);
+      }
+
+      console.log("❌ Blocked by CORS:", cleanOrigin);
+      return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -48,7 +58,7 @@ app.use(
   })
 );
 
-// ✅ MUST: preflight handler
+// ✅ must handle OPTIONS preflight
 app.options("*", cors());
 
 // routes
@@ -62,11 +72,15 @@ app.use("/api/dashboard", dashboard);
 app.use("/api/recurring", recurring);
 
 app.post("/api/seed", async (req, res) => {
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ message: "userId required" });
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ message: "userId required" });
 
-  await seedDefaults(userId);
-  res.json({ message: "Seeded ✅" });
+    await seedDefaults(userId);
+    res.json({ message: "Seeded ✅" });
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Seed failed" });
+  }
 });
 
 // cron
