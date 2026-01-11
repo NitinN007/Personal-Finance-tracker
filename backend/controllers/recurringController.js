@@ -1,0 +1,10 @@
+const RecurringRule=require("../models/RecurringRule");
+exports.createRule=async(req,res)=>{ const {type,amount,categoryId,note,frequency,interval,startDate}=req.body;
+  const sd=new Date(startDate);
+  const rule=await RecurringRule.create({userId:req.user.id,type,amount,categoryId,note:note||"",frequency,interval:interval||1,startDate:sd,nextRunAt:sd,isActive:true});
+  res.status(201).json(rule);
+};
+exports.listRules=async(req,res)=>{ const rules=await RecurringRule.find({userId:req.user.id}).sort({nextRunAt:1}).populate("categoryId"); res.json(rules); };
+exports.toggleRule=async(req,res)=>{ const r=await RecurringRule.findOne({_id:req.params.id,userId:req.user.id}); if(!r) return res.status(404).json({message:"Not found"});
+  r.isActive=!r.isActive; await r.save(); res.json(r);
+};
