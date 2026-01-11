@@ -29,7 +29,7 @@ app.use(cookieParser());
 // ✅ CORS FIX (Render + localhost)
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://personal-finance-tracker-frontend-ymm.onrender.com", // ✅ hardcode deployed frontend
+  "https://personal-finance-tracker-frontend-ymrm.onrender.com", // ✅ hardcode deployed frontend
   process.env.CLIENT_URL, // optional env
 ]
   .filter(Boolean) // ✅ removes undefined/null
